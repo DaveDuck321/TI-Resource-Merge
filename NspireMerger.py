@@ -7,8 +7,33 @@ def print_help():
     print("Usage: Nspiremerger <output file> <project root dir> <lua file globs>...")
     exit()
 
-def image_to_string(image):
-    return "Placeholder"
+def little_endian(number, byte_width):
+    bin_string = ""
+    binary = bin(number)[2:].zfill(byte_width*8)
+    for byte in range(0, byte_width)[::-1]:
+        bin_string += "\\"+str(int(binary[byte*8:byte*8+8], 2))
+
+    return bin_string
+
+def image_to_string(image_file):
+    im = Image.open(image_file).convert('RGBA')
+    data = im.load()
+
+    image_string = little_endian(im.size[0], 4) + little_endian(im.size[1], 4) #width, height
+    image_string += little_endian(0, 1) + little_endian(0, 1) + little_endian(0, 2) #alignment, flags, padding
+    image_string += little_endian(im.size[0]*2, 4)
+    image_string += little_endian(16, 2) + little_endian(1, 2) #bits per pixels, planes per bit
+
+    for y in range(im.size[1]):
+        for x in range(im.size[0]):
+            pixel = data[x, y]
+            r, g, b = int((pixel[0]/255)*31), int((pixel[1]/255)*31), int((pixel[2]/255)*31)
+            a = int(pixel[3] == 255)
+            total = b + (g<<5) + (r<<10) + (a<<15)
+            image_string += little_endian(total, 2)
+
+    return image_string
+
 
 def get_image_name(path):
     return os.path.split(path)[1].split(".")[-2]
@@ -20,8 +45,7 @@ def collect_resources(root):
     resources.append("_R = {}")
     resources.append("_R.IMG = {}")
     for file in glob.glob(root + "/res/IMG/*.png"):
-        image = Image.open(file).load()
-        image_str = image_to_string(image)
+        image_str = image_to_string(file)
         resources.append(f"_R.IMG.{get_image_name(file)} = '{image_str}'")
     
     resources.append(header)
