@@ -8,12 +8,10 @@ def print_help():
     exit()
 
 def little_endian(number, byte_width):
-    bin_string = ""
-    binary = bin(number)[2:].zfill(byte_width*8)
-    for byte in range(0, byte_width)[::-1]:
-        bin_string += "\\"+str(int(binary[byte*8:byte*8+8], 2))
-
-    return bin_string
+    escape_string = ""
+    for byte in range(0, byte_width):
+        escape_string += f"\\{(number>>(byte*8))&255}"
+    return escape_string
 
 def image_to_string(image_file):
     im = Image.open(image_file).convert('RGBA')
