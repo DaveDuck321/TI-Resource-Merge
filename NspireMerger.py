@@ -82,17 +82,17 @@ def print_to_file(resources, contents, outfile):
 def get_argument(tag, default, after):
     if not tag in sys.argv:
         return default
-    index = sys.argv.index("--"+tag) + 1
+    index = sys.argv.index(tag) + 1
     if after:
         return sys.argv[index:]
     return sys.argv[index]
 
 try:
     if __name__ == "__main__":
-        outfile = get_argument("out", "out.lua", False)
-        root = get_argument("root", "./", False)
-        target = get_argument("target", "luna", False)
-        input_file_globs = get_argument("in", ["*.lua", "src/*.lua"], True)
+        outfile = get_argument("--out", "out.lua", False)
+        root = get_argument("--root", "./", False)
+        target = get_argument("--target", "luna", False)
+        input_file_globs = get_argument("--in", ["*.lua", "src/*.lua"], True)
 
         if not Path(root).is_dir():
             print(f"Error: project directory: {root} not found")
