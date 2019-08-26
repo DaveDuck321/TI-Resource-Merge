@@ -4,7 +4,7 @@ from pathlib import Path
 from PIL import Image
 
 def print_help():
-    print("Usage: Nspiremerger <output file> <project root dir> <lua file globs>...")
+    print("Usage: Nspiremerger --target ? --out ? --root ? --in ? ? ?")
     exit()
 
 def little_endian(number, byte_width):
@@ -36,7 +36,9 @@ def image_to_string(image_file):
 def get_image_name(path):
     return os.path.split(path)[1].split(".")[-2]
 
-def collect_resources(root):
+def collect_resources(root, target):
+    if target != "luna":
+        return []
     header = "----- GENERATED ASSETS -----"
     resources = ["-" * len(header), header]
 
@@ -58,12 +60,14 @@ def merge_input_files(input_globs):
             merge_result.append("-" * len(header))
             merge_result.append(header)
 
+            print(file_name)
             merge_result.append(Path(file_name).read_text())
 
             merge_result.append(header)
             merge_result.append("-"*len(header))
     if len(merge_result) == 0:
-        raise Exception("Error: No input files found")
+        print("Error: No input files found")
+        print_help()
     return merge_result
 
 def print_to_file(resources, contents, outfile):
@@ -75,18 +79,29 @@ def print_to_file(resources, contents, outfile):
         output.write(content+'\n')
     output.close()
 
+def get_argument(tag, default, after):
+    if not tag in sys.argv:
+        return default
+    index = sys.argv.index("--"+tag) + 1
+    if after:
+        return sys.argv[index:]
+    return sys.argv[index]
+
 try:
     if __name__ == "__main__":
-        outfile = sys.argv[1]
-        root = sys.argv[2]
-        input_file_globs = sys.argv[3:]
+        outfile = get_argument("out", "out.lua", False)
+        root = get_argument("root", "./", False)
+        target = get_argument("target", "luna", False)
+        input_file_globs = get_argument("in", ["*.lua", "src/*.lua"], True)
 
         if not Path(root).is_dir():
-            raise Exception(f"Error: project directory: {root} not found")
-        if not Path(root + "/res"):
-            raise Exception(f"Error: resources directory: {root}/res not found")
+            print(f"Error: project directory: {root} not found")
+            print_help()
+        if target=="luna" and not Path(root + "/res"):
+            print(f"Error: resources directory: {root}/res not found")
+            print_help()
         
-        resources = collect_resources(root)
+        resources = collect_resources(root, target)
         merged_file = merge_input_files(input_file_globs)
         print_to_file(resources, merged_file, outfile)
         print("Success.")
